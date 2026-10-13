@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventra - Modern Inventory Management System</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 flex flex-col md:flex-row antialiased overflow-x-hidden">
+
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <aside id="sidebar" class="w-full md:w-64 bg-white/80 dark:bg-slate-800/80 border-r border-slate-200 dark:border-slate-700/60 glass-effect flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-30 sticky top-0 md:h-screen">
+        <div>
+            <!-- Sidebar Header -->
+            <div class="p-5 flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="box" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">INVENTRA</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Inventory Pro v2.0</p>
+                    </div>
+                </div>
+                <button id="mobileMenuToggle" class="md:hidden p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav id="navLinks" class="p-4 space-y-1 hidden md:block">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Dashboard
+                </button>
+                <button onclick="switchTab('products')" id="nav-products" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                    Produk & Stok
+                </button>
+                <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                    Mutasi Stok
+                </button>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer / Status -->
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700/60 hidden md:block">
+            <div id="connectionBadge" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600/40 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="statusText" class="font-medium text-slate-600 dark:text-slate-300">LocalStorage Mode</span>
+                </div>
+                <button onclick="openSettingsModal()" class="text-indigo-500 hover:underline text-xs font-semibold">Ubah</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+        <!-- Top Navbar -->
+        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 glass-effect sticky top-0 z-20 px-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <h2 id="pageTitle" class="text-xl font-bold text-slate-800 dark:text-slate-100">Dashboard Overview</h2>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform" title="Toggle Theme">
+                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                </button>
+                
+                <button onclick="openSettingsModal()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform" title="Pengaturan Database">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+
+                <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+
+                <div class="flex items-center gap-3 pl-1">
+                    <div class="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-sm">
+                        AD
+                    </div>
+                    <div class="hidden sm:block text-left">
+                        <p class="text-xs font-semibold">Admin Master</p>
+                        <p class="text-[10px] text-slate-400">Manager Staff</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="p-4 sm:p-6 lg:p-8 space-y-6">
+
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <!-- Stat Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Jenis Produk</p>
+                                <h3 id="statTotalProducts" class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                <i data-lucide="layers" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
+                            <span class="text-emerald-500 font-semibold flex items-center"><i data-lucide="trending-up" class="w-3.5 h-3.5 mr-1"></i> +12%</span> vs bulan lalu
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Stok Fisik</p>
+                                <h3 id="statTotalStock" class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                <i data-lucide="boxes" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
+                            Unit siap didistribusikan
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Nilai Inventaris (Aset)</p>
+                                <h3 id="statTotalValue" class="text-xl font-bold mt-1 text-slate-900 dark:text-white">Rp 0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                <i data-lucide="wallet" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
+                            Berdasarkan modal harga beli
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Stok Menipis / Kritis</p>
+                                <h3 id="statLowStock" class="text-2xl font-bold mt-1 text-amber-500">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-amber-500 font-medium gap-1">
+                            Perlu Restock Segera!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts & Quick Alerts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Chart Bar Category Distribution -->
+                    <div class="lg:col-span-2 p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i>
+                                Distribusi Stok per Kategori
+                            </h3>
+                        </div>
+                        <div class="relative h-64 w-full">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Quick Low Stock Alert List -->
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                                <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
+                                Peringatan Stok Rendah
+                            </h3>
+                            <div id="lowStockAlertList" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                                <!-- Dynamic Low Stock Items Inserted Here -->
+                            </div>
+                        </div>
+                        <button onclick="switchTab('products')" class="mt-4 w-full py-2.5 px-4 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center gap-2">
+                            Lihat Semua Produk <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-products" class="tab-content hidden space-y-6">
+                <!-- Controls & Filter Toolbar -->
+                <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
+                        <!-- Search Box -->
+                        <div class="relative flex-1 max-w-md">
+                            <i data-lucide="search" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Cari Kode SKU atau Nama Produk..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+
+                        <!-- Filter Category -->
+                        <select id="filterCategory" onchange="filterProducts()" class="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Semua Kategori</option>
+                        </select>
+
+                        <!-- Sort By -->
+                        <select id="sortBy" onchange="filterProducts()" class="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="name-asc">Nama (A - Z)</option>
+                            <option value="name-desc">Nama (Z - A)</option>
+                            <option value="stock-asc">Stok Terendah</option>
+                            <option value="stock-desc">Stok Tertinggi</option>
+                            <option value="price-desc">Harga Tertinggi</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                        <button onclick="openCategoryModal()" class="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <i data-lucide="folder-plus" class="w-4 h-4"></i> Kategori
+                        </button>
+                        
+                        <!-- Toggle View Mode -->
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-700/50 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <button id="btnViewTable" onclick="setProductView('table')" class="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-emerald-500"><i data-lucide="table" class="w-4 h-4"></i></button>
+                            <button id="btnViewGrid" onclick="setProductView('grid')" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+                        </div>
+
+                        <!-- Export Data Dropdown -->
+                        <div class="relative group">
+                            <button class="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 text-xs font-semibold flex items-center gap-1">
+                                <i data-lucide="download" class="w-4 h-4"></i> Export
+                            </button>
+                            <div class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg hidden group-hover:block z-10 py-1">
+                                <button onclick="exportData('csv')" class="w-full px-4 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> CSV Format</button>
+                                <button onclick="exportData('json')" class="w-full px-4 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"><i data-lucide="file-code" class="w-3.5 h-3.5"></i> JSON Format</button>
+                            </div>
+                        </div>
+
+                        <!-- Add Product Button -->
+                        <button onclick="openProductModal()" class="py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-transform hover:scale-105">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Tambah Produk
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Display Container -->
+                <div id="productContainer">
+                    <!-- Dynamic Table or Grid View Rendered Here -->
+                </div>
+            </section>
+
+            <section id="tab-transactions" class="tab-content hidden space-y-6">
+                <!-- Transaction Form & History Split -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Input Transaction -->
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm h-fit">
+                        <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                            <i data-lucide="arrow-left-right" class="w-5 h-5 text-indigo-500"></i>
+                            Input Mutasi Barang
+                        </h3>
+                        
+                        <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Pilih Produk</label>
+                                <select id="txProductSelect" required class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <!-- Options injected dynamically -->
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Tipe Mutasi</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center justify-center p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/40">
+                                        <input type="radio" name="txType" value="IN" checked class="hidden">
+                                        <span class="text-sm font-semibold text-emerald-600 flex items-center gap-1.5"><i data-lucide="arrow-down-left" class="w-4 h-4"></i> Barang Masuk</span>
+                                    </label>
+                                    <label class="flex items-center justify-center p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-950/20 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50 dark:has-[:checked]:bg-rose-950/40">
+                                        <input type="radio" name="txType" value="OUT" class="hidden">
+                                        <span class="text-sm font-semibold text-rose-600 flex items-center gap-1.5"><i data-lucide="arrow-up-right" class="w-4 h-4"></i> Barang Keluar</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Jumlah Unit</label>
+                                <input type="number" id="txQuantity" min="1" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Catatan / Keterangan</label>
+                                <textarea id="txNotes" rows="3" placeholder="Contoh: Restock Supplier A / Restok Toko..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/20 transition-transform hover:scale-[1.02]">
+                                Simpan Transaksi
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- History Table -->
+                    <div class="lg:col-span-2 p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col">
+                        <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                            <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
+                            Riwayat Mutasi Stok
+                        </h3>
+
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700/60 text-slate-400 text-xs">
+                                        <th class="pb-3 font-semibold">Waktu</th>
+                                        <th class="pb-3 font-semibold">Produk</th>
+                                        <th class="pb-3 font-semibold">Tipe</th>
+                                        <th class="pb-3 font-semibold">Jumlah</th>
+                                        <th class="pb-3 font-semibold">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionTableBody" class="divide-y divide-slate-100 dark:divide-slate-700/40">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Modal Add/Edit Product -->
+    <div id="productModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-lg w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 id="modalProductTitle" class="font-bold text-lg text-slate-900 dark:text-white">Tambah Produk Baru</h3>
+                <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form id="productForm" onsubmit="handleProductSubmit(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="prodId">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Kode SKU</label>
+                        <input type="text" id="prodSku" required placeholder="SKU-1001" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Kategori</label>
+                        <select id="prodCategory" required class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <!-- Dynamic Categories -->
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Nama Produk</label>
+                    <input type="text" id="prodName" required placeholder="Contoh: Keychron K2 Wireless Keyboard" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Harga Beli (IDR)</label>
+                        <input type="number" id="prodBuyPrice" min="0" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Harga Jual (IDR)</label>
+                        <input type="number" id="prodSellPrice" min="0" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Stok Awal</label>
+                        <input type="number" id="prodStock" min="0" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Min. Stok</label>
+                        <input type="number" id="prodMinStock" min="0" required placeholder="5" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Satuan</label>
+                        <input type="text" id="prodUnit" required placeholder="Pcs / Unit" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-700">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-lg shadow-emerald-500/20">Simpan Produk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Category Manager -->
+    <div id="categoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-bold text-lg text-slate-900 dark:text-white">Kelola Kategori</h3>
+                <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form onsubmit="handleAddCategory(event)" class="mt-4 flex gap-2">
+                <input type="text" id="newCategoryInput" required placeholder="Nama Kategori Baru..." class="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button type="submit" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold">Tambah</button>
+            </form>
+
+            <div class="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1" id="categoryListContainer">
+                <!-- Categories listed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Settings & Supabase Setup -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-indigo-500"></i> Pengaturan Supabase Database
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Masukkan URL dan Anon Public Key Supabase Anda. Jika dikosongkan, aplikasi akan berjalan menggunakan **LocalStorage / Mock Data Mode**.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Supabase URL</label>
+                    <input type="text" id="sbUrl" placeholder="https://xyzcompany.supabase.co" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Supabase Anon Key</label>
+                    <input type="password" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="saveSupabaseConfig()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs shadow-lg shadow-indigo-500/20">
+                        Hubungkan & Simpan Configuration
+                    </button>
+                    <button onclick="clearSupabaseConfig()" class="px-4 py-2.5 border border-rose-500/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl font-semibold text-xs">
+                        Reset Local
+                    </button>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Petunjuk Script SQL DDL Supabase:</h4>
+                    <p class="text-[11px] text-slate-400 mb-2">Salin dan jalankan query berikut pada SQL Editor di Dashboard Supabase Anda:</p>
+                    <pre class="bg-slate-900 text-emerald-400 p-3 rounded-xl text-[10px] overflow-x-auto font-mono select-all">
+-- 1. Table Categories
+CREATE TABLE categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);
+
+-- 2. Table Products
+CREATE TABLE products (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sku TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  buy_price NUMERIC DEFAULT 0,
+  sell_price NUMERIC DEFAULT 0,
+  stock INT DEFAULT 0,
+  min_stock INT DEFAULT 5,
+  unit TEXT DEFAULT 'Pcs',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 3. Table Stock Transactions
+CREATE TABLE stock_transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('IN', 'OUT')),
+  quantity INT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Seed Data
+        const INITIAL_CATEGORIES = ["Elektronik", "Aksesoris", "Perlengkap Kantor", "Pakaian"];
+        const INITIAL_PRODUCTS = [
+            { id: "1", sku: "SKU-1001", name: "Keychron K2 Mechanical Keyboard", category: "Elektronik", buy_price: 1100000, sell_price: 1450000, stock: 18, min_stock: 5, unit: "Unit" },
+            { id: "2", sku: "SKU-1002", name: "Logitech MX Master 3S", category: "Elektronik", buy_price: 1250000, sell_price: 1600000, stock: 3, min_stock: 5, unit: "Unit" },
+            { id: "3", sku: "SKU-1003", name: "Kursi Kerja Ergonomis Mesh", category: "Perlengkap Kantor", buy_price: 850000, sell_price: 1200000, stock: 12, min_stock: 3, unit: "Unit" },
+            { id: "4", sku: "SKU-1004", name: "Kabel USB-C Braided 2M", category: "Aksesoris", buy_price: 35000, sell_price: 75000, stock: 2, min_stock: 10, unit: "Pcs" }
+        ];
+        const INITIAL_TRANSACTIONS = [
+            { id: "tx-1", product_id: "1", type: "IN", quantity: 20, notes: "Stok awal pabrik", created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
+            { id: "tx-2", product_id: "1", type: "OUT", quantity: 2, notes: "Penjualan Tokopedia", created_at: new Date(Date.now() - 86400000).toISOString() }
+        ];
+
+        // Global State
+        let categories = [];
+        let products = [];
+        let transactions = [];
+        let supabaseClient = null;
+        let isSupabaseConnected = false;
+        let viewMode = 'table'; // 'table' | 'grid'
+        let categoryChartInstance = null;
+
+        // Initialize App
+        window.onload = async function() {
+            lucide.createIcons();
+            initTheme();
+            initSupabase();
+            await loadData();
+            renderAll();
+        };
+
+        // Theme Handling
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+            if (categoryChartInstance) renderChart();
+        }
+
+        // Supabase Initialization
+        function initSupabase() {
+            const url = localStorage.getItem('sb_url');
+            const key = localStorage.getItem('sb_key');
+
+            if (url && key && window.supabase) {
+                try {
+                    supabaseClient = window.supabase.createClient(url, key);
+                    isSupabaseConnected = true;
+                    updateStatusBadge(true, "Connected to Supabase");
+                } catch (e) {
+                    console.error("Supabase Config Error:", e);
+                    isSupabaseConnected = false;
+                    updateStatusBadge(false, "LocalStorage Fallback Mode");
+                }
+            } else {
+                isSupabaseConnected = false;
+                updateStatusBadge(false, "LocalStorage Fallback Mode");
+            }
+        }
+
+        function updateStatusBadge(connected, text) {
+            const dot = document.getElementById('statusDot');
+            const txt = document.getElementById('statusText');
+            if (connected) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                txt.textContent = text;
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                txt.textContent = text;
+            }
+        }
+
+        // Data Loading Strategy
+        async function loadData() {
+            if (isSupabaseConnected) {
+                try {
+                    const { data: catData } = await supabaseClient.from('categories').select('*');
+                    const { data: prodData } = await supabaseClient.from('products').select('*');
+                    const { data: txData } = await supabaseClient.from('stock_transactions').select('*');
+
+                    categories = catData && catData.length ? catData.map(c => c.name) : INITIAL_CATEGORIES;
+                    products = prodData || [];
+                    transactions = txData || [];
+                } catch (err) {
+                    showToast('Gagal memuat data dari Supabase, beralih ke LocalStorage', 'warning');
+                    loadLocalStorageData();
+                }
+            } else {
+                loadLocalStorageData();
+            }
+        }
+
+        function loadLocalStorageData() {
+            categories = JSON.parse(localStorage.getItem('inv_categories')) || INITIAL_CATEGORIES;
+            products = JSON.parse(localStorage.getItem('inv_products')) || INITIAL_PRODUCTS;
+            transactions = JSON.parse(localStorage.getItem('inv_transactions')) || INITIAL_TRANSACTIONS;
+        }
+
+        function saveData() {
+            if (!isSupabaseConnected) {
+                localStorage.setItem('inv_categories', JSON.stringify(categories));
+                localStorage.setItem('inv_products', JSON.stringify(products));
+                localStorage.setItem('inv_transactions', JSON.stringify(transactions));
+            }
+        }
+
+        function renderAll() {
+            renderCategoriesOptions();
+            renderDashboardStats();
+            renderLowStockAlerts();
+            renderProducts();
+            renderTransactions();
+            renderChart();
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
+                el.classList.add('text-slate-600', 'dark:text-slate-300');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            activeNav.classList.add('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
+            activeNav.classList.remove('text-slate-600', 'dark:text-slate-300');
+
+            const titles = {
+                dashboard: "Dashboard Overview",
+                products: "Manajemen Produk & Stok",
+                transactions: "Riwayat Mutasi Stok"
+            };
+            document.getElementById('pageTitle').textContent = titles[tabId];
+        }
+
+        // Format Currency IDR
+        function formatIDR(val) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+        }
+
+        // Dashboard Stats
+        function renderDashboardStats() {
+            const totalProds = products.length;
+            const totalStock = products.reduce((acc, p) => acc + Number(p.stock), 0);
+            const totalVal = products.reduce((acc, p) => acc + (Number(p.stock) * Number(p.buy_price)), 0);
+            const lowStockCount = products.filter(p => Number(p.stock) <= Number(p.min_stock)).length;
+
+            document.getElementById('statTotalProducts').textContent = totalProds;
+            document.getElementById('statTotalStock').textContent = totalStock.toLocaleString('id-ID');
+            document.getElementById('statTotalValue').textContent = formatIDR(totalVal);
+            document.getElementById('statLowStock').textContent = lowStockCount;
+        }
+
+        // Quick Low Stock List
+        function renderLowStockAlerts() {
+            const lowStockItems = products.filter(p => Number(p.stock) <= Number(p.min_stock));
+            const container = document.getElementById('lowStockAlertList');
+
+            if (lowStockItems.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Semua stok produk aman 👍</p>`;
+                return;
+            }
+
+            container.innerHTML = lowStockItems.map(p => `
+                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-800 dark:text-white">${p.name}</p>
+                        <p class="text-[10px] text-slate-400">SKU: ${p.sku}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">${p.stock} ${p.unit}</span>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Min: ${p.min_stock}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Chart.js
+        function renderChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            // Aggregate Stock per Category
+            const catMap = {};
+            categories.forEach(c => catMap[c] = 0);
+            products.forEach(p => {
+                catMap[p.category] = (catMap[p.category] || 0) + Number(p.stock);
+            });
+
+            const labels = Object.keys(catMap);
+            const dataValues = Object.values(catMap);
+
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+
+            categoryChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Stok Unit',
+                        data: dataValues,
+                        backgroundColor: '#10b981',
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: isDark ? '#94a3b8' : '#64748b' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: isDark ? '#94a3b8' : '#64748b' },
+                            grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Filter & Populate Categories
+        function renderCategoriesOptions() {
+            const filterSelect = document.getElementById('filterCategory');
+            const formSelect = document.getElementById('prodCategory');
+            
+            const currentFilter = filterSelect.value;
+            
+            filterSelect.innerHTML = '<option value="">Semua Kategori</option>' + 
+                categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            formSelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            filterSelect.value = currentFilter;
+
+            // Render modal category list
+            const modalList = document.getElementById('categoryListContainer');
+            modalList.innerHTML = categories.map((c, i) => `
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                    <span class="text-xs font-medium">${c}</span>
+                    <button onclick="removeCategory('${c}')" class="text-rose-500 hover:text-rose-700 text-xs"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // Render Products (Table / Grid Mode)
+        function renderProducts() {
+            const container = document.getElementById('productContainer');
+            const filtered = getFilteredProducts();
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60">
+                        <i data-lucide="package-x" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                        <p class="text-sm font-semibold text-slate-500">Tidak ada produk ditemukan</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (viewMode === 'table') {
+                container.innerHTML = `
+                    <div class="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs">
+                                        <th class="p-4 font-semibold">SKU & Nama Produk</th>
+                                        <th class="p-4 font-semibold">Kategori</th>
+                                        <th class="p-4 font-semibold">Harga Jual</th>
+                                        <th class="p-4 font-semibold">Status Stok</th>
+                                        <th class="p-4 font-semibold text-center">Quick Adjust</th>
+                                        <th class="p-4 font-semibold text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/40">
+                                    ${filtered.map(p => {
+                                        const statusBadge = getStockBadge(p.stock, p.min_stock);
+                                        return `
+                                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-700/20 transition-colors">
+                                                <td class="p-4">
+                                                    <p class="font-bold text-slate-900 dark:text-white">${p.name}</p>
+                                                    <p class="text-xs text-slate-400">${p.sku}</p>
+                                                </td>
+                                                <td class="p-4">
+                                                    <span class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">${p.category}</span>
+                                                </td>
+                                                <td class="p-4 font-semibold text-slate-800 dark:text-slate-100">
+                                                    ${formatIDR(p.sell_price)}
+                                                </td>
+                                                <td class="p-4">
+                                                    ${statusBadge}
+                                                </td>
+                                                <td class="p-4">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <button onclick="quickStockAdjust('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center font-bold text-xs">-</button>
+                                                        <span class="font-bold text-sm min-w-[2rem] text-center">${p.stock}</span>
+                                                        <button onclick="quickStockAdjust('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-emerald-500 hover:text-white transition-colors flex items-center justify-center font-bold text-xs">+</button>
+                                                    </div>
+                                                </td>
+                                                <td class="p-4 text-right">
+                                                    <div class="flex items-center justify-end gap-2">
+                                                        <button onclick="editProduct('${p.id}')" class="p-2 text-slate-400 hover:text-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                        <button onclick="deleteProduct('${p.id}')" class="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${filtered.map(p => `
+                            <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">${p.category}</span>
+                                        ${getStockBadge(p.stock, p.min_stock)}
+                                    </div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white mt-2">${p.name}</h4>
+                                    <p class="text-xs text-slate-400">SKU: ${p.sku}</p>
+                                    <p class="text-lg font-extrabold text-emerald-500 mt-3">${formatIDR(p.sell_price)}</p>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="quickStockAdjust('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center font-bold text-xs">-</button>
+                                        <span class="font-bold text-sm">${p.stock} ${p.unit}</span>
+                                        <button onclick="quickStockAdjust('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-emerald-500 hover:text-white transition-colors flex items-center justify-center font-bold text-xs">+</button>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button onclick="editProduct('${p.id}')" class="p-2 text-slate-400 hover:text-indigo-500"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                        <button onclick="deleteProduct('${p.id}')" class="p-2 text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function getStockBadge(stock, minStock) {
+            stock = Number(stock);
+            minStock = Number(minStock);
+
+            if (stock === 0) {
+                return `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">Habis (0)</span>`;
+            } else if (stock <= minStock) {
+                return `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">Menipis (${stock})</span>`;
+            } else {
+                return `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Aman (${stock})</span>`;
+            }
+        }
+
+        function setProductView(mode) {
+            viewMode = mode;
+            document.getElementById('btnViewTable').className = mode === 'table' ? 'p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-emerald-500' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200';
+            document.getElementById('btnViewGrid').className = mode === 'grid' ? 'p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-emerald-500' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200';
+            renderProducts();
+        }
+
+        // Filtering & Sorting
+        function getFilteredProducts() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('filterCategory').value;
+            const sort = document.getElementById('sortBy').value;
+
+            return products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+                const matchesCat = cat === '' || p.category === cat;
+                return matchesSearch && matchesCat;
+            }).sort((a, b) => {
+                if (sort === 'name-asc') return a.name.localeCompare(b.name);
+                if (sort === 'name-desc') return b.name.localeCompare(a.name);
+                if (sort === 'stock-asc') return Number(a.stock) - Number(b.stock);
+                if (sort === 'stock-desc') return Number(b.stock) - Number(a.stock);
+                if (sort === 'price-desc') return Number(b.sell_price) - Number(a.sell_price);
+                return 0;
+            });
+        }
+
+        function filterProducts() {
+            renderProducts();
+        }
+
+        // Quick Stock Adjust Buttons
+        async function quickStockAdjust(productId, delta) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+
+            const newStock = Number(prod.stock) + delta;
+            if (newStock < 0) return showToast('Stok tidak bisa negatif!', 'error');
+
+            prod.stock = newStock;
+
+            // Log Transaction
+            const newTx = {
+                id: 'tx-' + Date.now(),
+                product_id: productId,
+                type: delta > 0 ? 'IN' : 'OUT',
+                quantity: Math.abs(delta),
+                notes: 'Penyesuaian cepat tombol (+/-)',
+                created_at: new Date().toISOString()
+            };
+
+            transactions.unshift(newTx);
+
+            if (isSupabaseConnected) {
+                await supabaseClient.from('products').update({ stock: newStock }).eq('id', productId);
+                await supabaseClient.from('stock_transactions').insert([newTx]);
+            } else {
+                saveData();
+            }
+
+            renderAll();
+            showToast(`Stok ${prod.name} diperbarui`, 'success');
+        }
+
+        // Product CRUD Modals & Handlers
+        function openProductModal(prodId = null) {
+            const form = document.getElementById('productForm');
+            form.reset();
+
+            if (prodId) {
+                const p = products.find(item => item.id === prodId);
+                if (p) {
+                    document.getElementById('modalProductTitle').textContent = 'Edit Produk';
+                    document.getElementById('prodId').value = p.id;
+                    document.getElementById('prodSku').value = p.sku;
+                    document.getElementById('prodName').value = p.name;
+                    document.getElementById('prodCategory').value = p.category;
+                    document.getElementById('prodBuyPrice').value = p.buy_price;
+                    document.getElementById('prodSellPrice').value = p.sell_price;
+                    document.getElementById('prodStock').value = p.stock;
+                    document.getElementById('prodMinStock').value = p.min_stock;
+                    document.getElementById('prodUnit').value = p.unit;
+                }
+            } else {
+                document.getElementById('modalProductTitle').textContent = 'Tambah Produk Baru';
+                document.getElementById('prodId').value = '';
+            }
+
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        async function handleProductSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('prodId').value;
+            const prodData = {
+                sku: document.getElementById('prodSku').value.trim(),
+                name: document.getElementById('prodName').value.trim(),
+                category: document.getElementById('prodCategory').value,
+                buy_price: Number(document.getElementById('prodBuyPrice').value),
+                sell_price: Number(document.getElementById('prodSellPrice').value),
+                stock: Number(document.getElementById('prodStock').value),
+                min_stock: Number(document.getElementById('prodMinStock').value),
+                unit: document.getElementById('prodUnit').value.trim()
+            };
+
+            if (id) {
+                // Edit Mode
+                const index = products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    products[index] = { ...products[index], ...prodData };
+                    if (isSupabaseConnected) {
+                        await supabaseClient.from('products').update(prodData).eq('id', id);
+                    }
+                    showToast('Produk berhasil diperbarui', 'success');
+                }
+            } else {
+                // New Product
+                const newId = 'prod-' + Date.now();
+                const newProd = { id: newId, ...prodData };
+                products.push(newProd);
+
+                if (isSupabaseConnected) {
+                    await supabaseClient.from('products').insert([newProd]);
+                }
+                showToast('Produk baru ditambahkan', 'success');
+            }
+
+            saveData();
+            closeProductModal();
+            renderAll();
+        }
+
+        function editProduct(id) {
+            openProductModal(id);
+        }
+
+        async function deleteProduct(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+                products = products.filter(p => p.id !== id);
+                transactions = transactions.filter(t => t.product_id !== id);
+
+                if (isSupabaseConnected) {
+                    await supabaseClient.from('products').delete().eq('id', id);
+                } else {
+                    saveData();
+                }
+
+                renderAll();
+                showToast('Produk berhasil dihapus', 'success');
+            }
+        }
+
+        // Category Manager
+        function openCategoryModal() {
+            renderCategoriesOptions();
+            document.getElementById('categoryModal').classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.add('hidden');
+        }
+
+        async function handleAddCategory(e) {
+            e.preventDefault();
+            const input = document.getElementById('newCategoryInput');
+            const val = input.value.trim();
+
+            if (val && !categories.includes(val)) {
+                categories.push(val);
+                if (isSupabaseConnected) {
+                    await supabaseClient.from('categories').insert([{ name: val }]);
+                } else {
+                    saveData();
+                }
+                input.value = '';
+                renderCategoriesOptions();
+                renderAll();
+                showToast('Kategori baru ditambahkan', 'success');
+            }
+        }
+
+        async function removeCategory(name) {
+            if (confirm(`Hapus kategori "${name}"?`)) {
+                categories = categories.filter(c => c !== name);
+                if (isSupabaseConnected) {
+                    await supabaseClient.from('categories').delete().eq('name', name);
+                } else {
+                    saveData();
+                }
+                renderCategoriesOptions();
+                renderAll();
+                showToast('Kategori dihapus', 'success');
+            }
+        }
+
+        function renderTransactions() {
+            const select = document.getElementById('txProductSelect');
+            select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (Stok: ${p.stock})</option>`).join('');
+
+            const tbody = document.getElementById('transactionTableBody');
+            if (transactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada mutasi stok recorded.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(t => {
+                const prod = products.find(p => p.id === t.product_id) || { name: 'Produk Dihapus' };
+                const isTypeIn = t.type === 'IN';
+                const dateStr = new Date(t.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+
+                return `
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20">
+                        <td class="py-3 text-xs text-slate-400">${dateStr}</td>
+                        <td class="py-3 font-semibold text-slate-800 dark:text-slate-100">${prod.name}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isTypeIn ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}">
+                                ${isTypeIn ? '+ Masuk' : '- Keluar'}
+                            </span>
+                        </td>
+                        <td class="py-3 font-bold text-sm ${isTypeIn ? 'text-emerald-500' : 'text-rose-500'}">
+                            ${isTypeIn ? '+' : '-'}${t.quantity}
+                        </td>
+                        <td class="py-3 text-xs text-slate-400">${t.notes || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function handleTransactionSubmit(e) {
+            e.preventDefault();
+            const productId = document.getElementById('txProductSelect').value;
+            const type = document.querySelector('input[name="txType"]:checked').value;
+            const quantity = Number(document.getElementById('txQuantity').value);
+            const notes = document.getElementById('txNotes').value.trim();
+
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+
+            if (type === 'OUT' && prod.stock < quantity) {
+                return showToast('Stok tidak mencukupi untuk barang keluar!', 'error');
+            }
+
+            // Update product stock
+            if (type === 'IN') prod.stock += quantity;
+            else prod.stock -= quantity;
+
+            const newTx = {
+                id: 'tx-' + Date.now(),
+                product_id: productId,
+                type: type,
+                quantity: quantity,
+                notes: notes,
+                created_at: new Date().toISOString()
+            };
+
+            transactions.unshift(newTx);
+
+            if (isSupabaseConnected) {
+                await supabaseClient.from('products').update({ stock: prod.stock }).eq('id', productId);
+                await supabaseClient.from('stock_transactions').insert([newTx]);
+            } else {
+                saveData();
+            }
+
+            document.getElementById('transactionForm').reset();
+            renderAll();
+            showToast('Transaksi mutasi stok berhasil disimpan', 'success');
+        }
+
+        // Export CSV / JSON
+        function exportData(type) {
+            if (type === 'json') {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(products, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `inventory_export_${Date.now()}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            } else if (type === 'csv') {
+                const headers = ["SKU", "Nama Produk", "Kategori", "Harga Beli", "Harga Jual", "Stok", "Min Stok", "Satuan"];
+                const rows = products.map(p => [p.sku, `"${p.name}"`, p.category, p.buy_price, p.sell_price, p.stock, p.min_stock, p.unit]);
+                let csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `inventory_export_${Date.now()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            }
+            showToast(`Data berhasil diexport (${type.toUpperCase()})`, 'success');
+        }
+
+        // Supabase Settings Modal
+        function openSettingsModal() {
+            document.getElementById('sbUrl').value = localStorage.getItem('sb_url') || '';
+            document.getElementById('sbKey').value = localStorage.getItem('sb_key') || '';
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSupabaseConfig() {
+            const url = document.getElementById('sbUrl').value.trim();
+            const key = document.getElementById('sbKey').value.trim();
+
+            if (url && key) {
+                localStorage.setItem('sb_url', url);
+                localStorage.setItem('sb_key', key);
+                initSupabase();
+                loadData().then(() => renderAll());
+                closeSettingsModal();
+                showToast('Konfigurasi Supabase berhasil disimpan!', 'success');
+            } else {
+                showToast('URL & Key Supabase tidak boleh kosong', 'error');
+            }
+        }
+
+        function clearSupabaseConfig() {
+            localStorage.removeItem('sb_url');
+            localStorage.removeItem('sb_key');
+            supabaseClient = null;
+            isSupabaseConnected = false;
+            updateStatusBadge(false, "LocalStorage Fallback Mode");
+            loadLocalStorageData();
+            renderAll();
+            closeSettingsModal();
+            showToast('Konfigurasi Supabase direset ke LocalStorage', 'info');
+        }
+
+        // Notification Toast System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                success: 'bg-emerald-500 text-white',
+                error: 'bg-rose-500 text-white',
+                warning: 'bg-amber-500 text-white',
+                info: 'bg-indigo-600 text-white'
+            };
+
+            toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type]}`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Mobile Menu Toggle Event
+        document.getElementById('mobileMenuToggle').addEventListener('click', () => {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>
