@@ -70,13 +70,45 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+        /* Kartu kaca ala dashboard referensi */
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+        }
+        html.dark .glass-card {
+            background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.02));
+            border-color: rgba(255,255,255,.09);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 14px 32px -14px rgba(0,0,0,.65);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .glass-card.tone-green { background: #ecfdf5; border-color: #a7f3d0; }
+        html.dark .glass-card.tone-green {
+            background: linear-gradient(145deg, rgba(16,185,129,.30), rgba(16,185,129,.05));
+            border-color: rgba(52,211,153,.45);
+        }
+        .glass-card.tone-amber { background: #fffbeb; border-color: #fde68a; }
+        html.dark .glass-card.tone-amber {
+            background: linear-gradient(145deg, rgba(245,158,11,.30), rgba(245,158,11,.05));
+            border-color: rgba(251,191,36,.45);
+        }
+        /* Kartu di tab lain ikut gaya kaca saat mode gelap */
+        html.dark .dark\:bg-slate-800\/80 { background-color: rgba(255,255,255,.04) !important; }
+        html.dark .dark\:border-slate-700\/60 { border-color: rgba(255,255,255,.09) !important; }
+        html.dark body {
+            background-image: radial-gradient(1100px 480px at 75% -8%, rgba(16,185,129,.09), transparent 70%);
+            background-attachment: fixed;
+        }
+        .log-scroll { max-height: 19rem; overflow-y: auto; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 flex flex-col md:flex-row antialiased overflow-x-hidden">
+<body class="bg-slate-50 dark:bg-[#0a0f1c] text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 flex flex-col md:flex-row antialiased overflow-x-hidden">
 
     <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <aside id="sidebar" class="w-full md:w-64 bg-white/80 dark:bg-slate-800/80 border-r border-slate-200 dark:border-slate-700/60 glass-effect flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-30 sticky top-0 md:h-screen">
+    <aside id="sidebar" class="w-full md:w-64 bg-white/80 dark:bg-[#0c1322]/90 border-r border-slate-200 dark:border-slate-700/60 glass-effect flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-30 sticky top-0 md:h-screen">
         <div>
             <!-- Sidebar Header -->
             <div class="p-5 flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60">
@@ -125,7 +157,7 @@
 
     <main class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
         <!-- Top Navbar -->
-        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 glass-effect sticky top-0 z-20 px-6 flex items-center justify-between">
+        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-[#0a0f1c]/70 glass-effect sticky top-0 z-20 px-6 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <h2 id="pageTitle" class="text-xl font-bold text-slate-800 dark:text-slate-100">Dashboard Overview</h2>
             </div>
@@ -161,99 +193,112 @@
         <!-- Content Area -->
         <div class="p-4 sm:p-6 lg:p-8 space-y-6">
 
-            <section id="tab-dashboard" class="tab-content space-y-6">
-                <!-- Stat Cards Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Jenis Produk</p>
-                                <h3 id="statTotalProducts" class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">0</h3>
-                            </div>
-                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                                <i data-lucide="layers" class="w-6 h-6"></i>
-                            </div>
+            <section id="tab-dashboard" class="tab-content space-y-5">
+                <!-- Kartu ringkasan -->
+                <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="glass-card p-5">
+                        <div class="flex items-start justify-between">
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-300">Total Produk</p>
+                            <i data-lucide="layers" class="w-4 h-4 text-slate-400"></i>
                         </div>
-                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
-                            <span class="text-emerald-500 font-semibold flex items-center"><i data-lucide="trending-up" class="w-3.5 h-3.5 mr-1"></i> +12%</span> vs bulan lalu
+                        <div class="mt-3 flex items-end gap-2 flex-wrap">
+                            <h3 id="statTotalProducts" class="text-3xl font-bold text-slate-900 dark:text-white leading-none">0</h3>
+                            <span id="statCategoryBadge" class="px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">0 kategori</span>
                         </div>
                     </div>
 
-                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Stok Fisik</p>
-                                <h3 id="statTotalStock" class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">0</h3>
-                            </div>
-                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                                <i data-lucide="boxes" class="w-6 h-6"></i>
-                            </div>
+                    <div class="glass-card p-5">
+                        <div class="flex items-start justify-between">
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-300">Total Stok Fisik</p>
+                            <i data-lucide="boxes" class="w-4 h-4 text-slate-400"></i>
                         </div>
-                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
-                            Unit siap didistribusikan
+                        <div class="mt-3 flex items-end gap-2">
+                            <h3 id="statTotalStock" class="text-3xl font-bold text-slate-900 dark:text-white leading-none">0</h3>
+                            <span class="text-sm text-slate-500 dark:text-slate-400 mb-0.5">unit</span>
                         </div>
                     </div>
 
-                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
-                        <div class="flex items-center justify-between">
+                    <div class="glass-card tone-green p-5">
+                        <div class="flex items-start justify-between">
                             <div>
-                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Nilai Inventaris (Aset)</p>
-                                <h3 id="statTotalValue" class="text-xl font-bold mt-1 text-slate-900 dark:text-white">Rp 0</h3>
+                                <p class="text-xs font-medium text-emerald-700 dark:text-emerald-200">Stok Masuk</p>
+                                <p class="period-label text-[10px] text-emerald-700/70 dark:text-emerald-200/60">7 hari terakhir</p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                                <i data-lucide="wallet" class="w-6 h-6"></i>
-                            </div>
+                            <span class="w-7 h-7 rounded-lg bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 flex items-center justify-center"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></span>
                         </div>
-                        <div class="mt-4 flex items-center text-xs text-slate-400 gap-1">
-                            Berdasarkan modal harga beli
+                        <div class="mt-3 flex items-end gap-2">
+                            <h3 id="statStockIn" class="text-3xl font-bold text-slate-900 dark:text-white leading-none">0</h3>
+                            <span class="text-sm text-emerald-700 dark:text-emerald-200 mb-0.5">unit</span>
                         </div>
                     </div>
 
-                    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
-                        <div class="flex items-center justify-between">
+                    <div class="glass-card tone-amber p-5">
+                        <div class="flex items-start justify-between">
                             <div>
-                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Stok Menipis / Kritis</p>
-                                <h3 id="statLowStock" class="text-2xl font-bold mt-1 text-amber-500">0</h3>
+                                <p class="text-xs font-medium text-amber-700 dark:text-amber-200">Stok Menipis</p>
+                                <p class="text-[10px] text-amber-700/70 dark:text-amber-200/60">Perlu restock</p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-                            </div>
+                            <span class="w-7 h-7 rounded-lg bg-amber-500/25 text-amber-600 dark:text-amber-300 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-4 h-4"></i></span>
                         </div>
-                        <div class="mt-4 flex items-center text-xs text-amber-500 font-medium gap-1">
-                            Perlu Restock Segera!
+                        <div class="mt-3 flex items-end gap-2">
+                            <h3 id="statLowStock" class="text-3xl font-bold text-amber-600 dark:text-amber-300 leading-none">0</h3>
+                            <span class="text-sm text-amber-700 dark:text-amber-200 mb-0.5">item</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts & Quick Alerts Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Chart Bar Category Distribution -->
-                    <div class="lg:col-span-2 p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i>
-                                Distribusi Stok per Kategori
-                            </h3>
+                <!-- Pergerakan stok + log aktivitas -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                    <div class="xl:col-span-2 glass-card p-5">
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                            <div>
+                                <h3 class="font-semibold text-slate-900 dark:text-white">Pergerakan Stok</h3>
+                                <div class="mt-2 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-300">
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Masuk</span>
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>Keluar</span>
+                                </div>
+                            </div>
+                            <select id="periodSelect" onchange="setDashPeriod(this.value)" class="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="7">7 hari terakhir</option>
+                                <option value="14">14 hari terakhir</option>
+                                <option value="30">30 hari terakhir</option>
+                            </select>
                         </div>
-                        <div class="relative h-64 w-full">
-                            <canvas id="categoryChart"></canvas>
+                        <div class="relative h-72 w-full mt-4">
+                            <canvas id="movementChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Quick Low Stock Alert List -->
-                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-                                <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
-                                Peringatan Stok Rendah
-                            </h3>
-                            <div id="lowStockAlertList" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                                <!-- Dynamic Low Stock Items Inserted Here -->
-                            </div>
+                    <div class="glass-card p-5 flex flex-col">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-slate-900 dark:text-white">Log Aktivitas Stok</h3>
+                            <button onclick="switchTab('transactions')" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline">Semua</button>
                         </div>
-                        <button onclick="switchTab('products')" class="mt-4 w-full py-2.5 px-4 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center gap-2">
-                            Lihat Semua Produk <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
+                        <div class="grid grid-cols-[3.2rem_1fr_3rem_4.2rem] gap-2 mt-4 pb-2 text-[11px] text-slate-400 border-b border-slate-200 dark:border-white/10">
+                            <span>Aksi</span><span>SKU</span><span>Jumlah</span><span class="text-right">Waktu</span>
+                        </div>
+                        <div id="activityLog" class="log-scroll divide-y divide-slate-100 dark:divide-white/5 flex-1"></div>
+                    </div>
+                </div>
+
+                <!-- Baris bawah -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="glass-card p-5">
+                        <h3 class="font-semibold text-slate-900 dark:text-white">Total Barang Bergerak</h3>
+                        <p class="period-label text-[11px] text-slate-400 mt-0.5">7 hari terakhir</p>
+                        <div id="movedRings" class="mt-5 flex items-center justify-around"></div>
+                    </div>
+
+                    <div class="glass-card p-5">
+                        <h3 class="font-semibold text-slate-900 dark:text-white">Kategori Paling Bergerak</h3>
+                        <p class="period-label text-[11px] text-slate-400 mt-0.5">7 hari terakhir</p>
+                        <div id="topCategories" class="mt-4 space-y-3"></div>
+                    </div>
+
+                    <div class="glass-card p-5">
+                        <h3 class="font-semibold text-slate-900 dark:text-white">Peringatan Stok Rendah</h3>
+                        <div id="gaugeBox" class="mt-2"></div>
+                        <div id="lowStockAlertList" class="mt-2 space-y-2"></div>
                     </div>
                 </div>
             </section>
@@ -279,7 +324,6 @@
                             <option value="name-desc">Nama (Z - A)</option>
                             <option value="stock-asc">Stok Terendah</option>
                             <option value="stock-desc">Stok Tertinggi</option>
-                            <option value="price-desc">Harga Tertinggi</option>
                         </select>
                     </div>
 
@@ -425,17 +469,6 @@
                     <input type="text" id="prodName" required placeholder="Contoh: Keychron K2 Wireless Keyboard" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Harga Beli (IDR)</label>
-                        <input type="number" id="prodBuyPrice" min="0" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Harga Jual (IDR)</label>
-                        <input type="number" id="prodSellPrice" min="0" required placeholder="0" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Stok Awal</label>
@@ -538,13 +571,14 @@ CREATE TABLE products (
   sku TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
-  buy_price NUMERIC DEFAULT 0,
-  sell_price NUMERIC DEFAULT 0,
   stock INT DEFAULT 0,
   min_stock INT DEFAULT 5,
   unit TEXT DEFAULT 'Pcs',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+-- (Opsional) Jika tabel products lama masih punya kolom harga, boleh dibuang:
+-- ALTER TABLE products DROP COLUMN IF EXISTS buy_price, DROP COLUMN IF EXISTS sell_price;
 
 -- 3. Table Stock Transactions
 CREATE TABLE stock_transactions (
@@ -565,14 +599,23 @@ CREATE TABLE stock_transactions (
         // Default Seed Data
         const INITIAL_CATEGORIES = ["Elektronik", "Aksesoris", "Perlengkap Kantor", "Pakaian"];
         const INITIAL_PRODUCTS = [
-            { id: "1", sku: "SKU-1001", name: "Keychron K2 Mechanical Keyboard", category: "Elektronik", buy_price: 1100000, sell_price: 1450000, stock: 18, min_stock: 5, unit: "Unit" },
-            { id: "2", sku: "SKU-1002", name: "Logitech MX Master 3S", category: "Elektronik", buy_price: 1250000, sell_price: 1600000, stock: 3, min_stock: 5, unit: "Unit" },
-            { id: "3", sku: "SKU-1003", name: "Kursi Kerja Ergonomis Mesh", category: "Perlengkap Kantor", buy_price: 850000, sell_price: 1200000, stock: 12, min_stock: 3, unit: "Unit" },
-            { id: "4", sku: "SKU-1004", name: "Kabel USB-C Braided 2M", category: "Aksesoris", buy_price: 35000, sell_price: 75000, stock: 2, min_stock: 10, unit: "Pcs" }
+            { id: "1", sku: "SKU-1001", name: "Keychron K2 Mechanical Keyboard", category: "Elektronik", stock: 18, min_stock: 5, unit: "Unit" },
+            { id: "2", sku: "SKU-1002", name: "Logitech MX Master 3S", category: "Elektronik", stock: 3, min_stock: 5, unit: "Unit" },
+            { id: "3", sku: "SKU-1003", name: "Kursi Kerja Ergonomis Mesh", category: "Perlengkap Kantor", stock: 12, min_stock: 3, unit: "Unit" },
+            { id: "4", sku: "SKU-1004", name: "Kabel USB-C Braided 2M", category: "Aksesoris", stock: 2, min_stock: 10, unit: "Pcs" }
         ];
+        const ago = (days, hours = 0) => new Date(Date.now() - 86400000 * days - 3600000 * hours).toISOString();
         const INITIAL_TRANSACTIONS = [
-            { id: "tx-1", product_id: "1", type: "IN", quantity: 20, notes: "Stok awal pabrik", created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
-            { id: "tx-2", product_id: "1", type: "OUT", quantity: 2, notes: "Penjualan Tokopedia", created_at: new Date(Date.now() - 86400000).toISOString() }
+            { id: "tx-1", product_id: "1", type: "IN", quantity: 20, notes: "Stok awal pabrik", created_at: ago(6, 2) },
+            { id: "tx-2", product_id: "1", type: "OUT", quantity: 2, notes: "Penjualan", created_at: ago(5, 1) },
+            { id: "tx-3", product_id: "2", type: "IN", quantity: 10, notes: "Restock", created_at: ago(5, 5) },
+            { id: "tx-4", product_id: "2", type: "OUT", quantity: 7, notes: "Penjualan", created_at: ago(4, 3) },
+            { id: "tx-5", product_id: "3", type: "IN", quantity: 15, notes: "Restock", created_at: ago(3, 4) },
+            { id: "tx-6", product_id: "3", type: "OUT", quantity: 3, notes: "Penjualan", created_at: ago(2, 2) },
+            { id: "tx-7", product_id: "4", type: "IN", quantity: 25, notes: "Restock", created_at: ago(2, 6) },
+            { id: "tx-8", product_id: "4", type: "OUT", quantity: 23, notes: "Penjualan", created_at: ago(1, 3) },
+            { id: "tx-9", product_id: "1", type: "IN", quantity: 5, notes: "Restock", created_at: ago(0, 4) },
+            { id: "tx-10", product_id: "2", type: "OUT", quantity: 2, notes: "Penjualan", created_at: ago(0, 1) }
         ];
 
         // Global State
@@ -582,7 +625,8 @@ CREATE TABLE stock_transactions (
         let supabaseClient = null;
         let isSupabaseConnected = false;
         let viewMode = 'table'; // 'table' | 'grid'
-        let categoryChartInstance = null;
+        let movementChartInstance = null;
+        let dashPeriod = 7;
 
         // ---------- Helpers Supabase ----------
         function uuid() {
@@ -664,7 +708,7 @@ CREATE TABLE stock_transactions (
 
         // Theme Handling
         function initTheme() {
-            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (localStorage.theme !== 'light') {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
@@ -679,7 +723,7 @@ CREATE TABLE stock_transactions (
                 document.documentElement.classList.add('dark');
                 localStorage.theme = 'dark';
             }
-            if (categoryChartInstance) renderChart();
+            if (movementChartInstance) renderChart();
         }
 
         // Supabase Initialization
@@ -798,95 +842,237 @@ CREATE TABLE stock_transactions (
             document.getElementById('pageTitle').textContent = titles[tabId];
         }
 
-        // Format Currency IDR
-        function formatIDR(val) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+        // ---------- Dashboard ----------
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
-        // Dashboard Stats
+        function dayKey(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function setDashPeriod(v) {
+            dashPeriod = Number(v) || 7;
+            renderDashboardStats();
+            renderChart();
+        }
+
+        function periodStart() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() - (dashPeriod - 1));
+            return d;
+        }
+
+        function txInPeriod() {
+            const start = periodStart();
+            return transactions.filter(t => new Date(t.created_at) >= start);
+        }
+
+        function ringSvg(value, total, color) {
+            const r = 34, c = 2 * Math.PI * r;
+            const pct = total ? value / total : 0;
+            return `
+                <div class="relative w-20 h-20">
+                    <svg viewBox="0 0 84 84" class="w-20 h-20 -rotate-90">
+                        <circle cx="42" cy="42" r="${r}" fill="none" stroke="currentColor" class="text-slate-200 dark:text-white/10" stroke-width="7"/>
+                        <circle cx="42" cy="42" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct)}"/>
+                    </svg>
+                    <span class="absolute inset-0 flex items-center justify-center font-bold text-slate-900 dark:text-white">${value.toLocaleString('id-ID')}</span>
+                </div>`;
+        }
+
+        function gaugeSvg(healthPct) {
+            const cx = 100, cy = 100, r = 78;
+            const pt = (rad, deg) => [cx + rad * Math.cos(deg * Math.PI / 180), cy + rad * Math.sin(deg * Math.PI / 180)];
+            const arc = (a0, a1) => {
+                const [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a1);
+                return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+            };
+            const needleDeg = 180 + (healthPct / 100) * 180;
+            const [nx, ny] = pt(r - 20, needleDeg);
+            return `
+                <svg viewBox="0 0 200 112" class="w-full max-w-[220px] mx-auto">
+                    <path d="${arc(180, 238)}" fill="none" stroke="#f87171" stroke-width="13" stroke-linecap="round"/>
+                    <path d="${arc(242, 298)}" fill="none" stroke="#fbbf24" stroke-width="13" stroke-linecap="round"/>
+                    <path d="${arc(302, 360)}" fill="none" stroke="#34d399" stroke-width="13" stroke-linecap="round"/>
+                    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="currentColor" class="text-slate-700 dark:text-white" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="${cx}" cy="${cy}" r="7" fill="currentColor" class="text-slate-700 dark:text-white"/>
+                </svg>`;
+        }
+
         function renderDashboardStats() {
             const totalProds = products.length;
             const totalStock = products.reduce((acc, p) => acc + Number(p.stock), 0);
-            const totalVal = products.reduce((acc, p) => acc + (Number(p.stock) * Number(p.buy_price)), 0);
             const lowStockCount = products.filter(p => Number(p.stock) <= Number(p.min_stock)).length;
+            const periodTx = txInPeriod();
+            const sumIn = periodTx.filter(t => t.type === 'IN').reduce((a, t) => a + Number(t.quantity), 0);
+            const sumOut = periodTx.filter(t => t.type === 'OUT').reduce((a, t) => a + Number(t.quantity), 0);
+            const label = `${dashPeriod} hari terakhir`;
 
-            document.getElementById('statTotalProducts').textContent = totalProds;
+            document.getElementById('statTotalProducts').textContent = totalProds.toLocaleString('id-ID');
+            document.getElementById('statCategoryBadge').textContent = `${categories.length} kategori`;
             document.getElementById('statTotalStock').textContent = totalStock.toLocaleString('id-ID');
-            document.getElementById('statTotalValue').textContent = formatIDR(totalVal);
+            document.getElementById('statStockIn').textContent = sumIn.toLocaleString('id-ID');
             document.getElementById('statLowStock').textContent = lowStockCount;
+            document.querySelectorAll('.period-label').forEach(el => el.textContent = label);
+            document.getElementById('periodSelect').value = String(dashPeriod);
+
+            // Cincin barang bergerak
+            const total = sumIn + sumOut;
+            document.getElementById('movedRings').innerHTML = `
+                <div class="text-center">${ringSvg(sumIn, total, '#34d399')}<p class="mt-2 text-xs text-slate-500 dark:text-slate-300">Masuk</p></div>
+                <div class="text-center">${ringSvg(sumOut, total, '#f87171')}<p class="mt-2 text-xs text-slate-500 dark:text-slate-300">Keluar</p></div>`;
+
+            // Kategori paling bergerak
+            const catMove = {};
+            periodTx.forEach(t => {
+                const prod = products.find(p => p.id === t.product_id);
+                if (!prod) return;
+                catMove[prod.category] = (catMove[prod.category] || 0) + Number(t.quantity);
+            });
+            const top = Object.entries(catMove).sort((a, b) => b[1] - a[1]).slice(0, 4);
+            const maxMove = top.length ? top[0][1] : 1;
+            document.getElementById('topCategories').innerHTML = top.length ? top.map(([name, qty]) => `
+                <div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="flex items-center gap-2 text-slate-700 dark:text-slate-200 min-w-0"><i data-lucide="folder" class="w-4 h-4 text-slate-400 flex-shrink-0"></i><span class="truncate">${escapeHtml(name)}</span></span>
+                        <span class="font-semibold text-slate-900 dark:text-white ml-2">${qty.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div class="mt-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400" style="width:${Math.max(6, qty / maxMove * 100)}%"></div></div>
+                </div>`).join('') : `<p class="text-xs text-slate-400 py-6 text-center">Belum ada mutasi pada periode ini.</p>`;
+
+            // Gauge kesehatan stok
+            const health = totalProds ? Math.round((totalProds - lowStockCount) / totalProds * 100) : 100;
+            document.getElementById('gaugeBox').innerHTML = gaugeSvg(health) + `
+                <p class="text-center -mt-1 text-sm font-semibold text-slate-900 dark:text-white">${health}% stok aman</p>
+                <p class="text-center text-[11px] text-slate-400">${lowStockCount} dari ${totalProds} produk di bawah batas minimum</p>`;
+
+            renderActivityLog();
+            lucide.createIcons();
         }
 
-        // Quick Low Stock List
+        function renderActivityLog() {
+            const box = document.getElementById('activityLog');
+            const rows = [...transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 12);
+            if (!rows.length) {
+                box.innerHTML = `<p class="text-xs text-slate-400 py-8 text-center">Belum ada aktivitas stok.</p>`;
+                return;
+            }
+            const todayKey = dayKey(new Date());
+            box.innerHTML = rows.map(t => {
+                const prod = products.find(p => p.id === t.product_id);
+                const d = new Date(t.created_at);
+                const time = dayKey(d) === todayKey
+                    ? d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const isIn = t.type === 'IN';
+                return `
+                    <div class="grid grid-cols-[3.2rem_1fr_3rem_4.2rem] gap-2 items-center py-2 text-xs">
+                        <span class="text-center py-1 rounded-md font-bold ${isIn ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'}">${isIn ? 'IN' : 'OUT'}</span>
+                        <span class="truncate text-slate-700 dark:text-slate-200" title="${escapeHtml(prod ? prod.name : '')}">${escapeHtml(prod ? prod.sku : '-')}</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">${Number(t.quantity).toLocaleString('id-ID')}</span>
+                        <span class="text-right text-slate-400">${time}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        // Daftar singkat stok rendah (di bawah gauge)
         function renderLowStockAlerts() {
             const lowStockItems = products.filter(p => Number(p.stock) <= Number(p.min_stock));
             const container = document.getElementById('lowStockAlertList');
 
             if (lowStockItems.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Semua stok produk aman 👍</p>`;
+                container.innerHTML = `<p class="text-xs text-slate-400 py-2 text-center">Semua stok produk aman</p>`;
                 return;
             }
 
-            container.innerHTML = lowStockItems.map(p => `
-                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-bold text-slate-800 dark:text-white">${p.name}</p>
-                        <p class="text-[10px] text-slate-400">SKU: ${p.sku}</p>
+            const shown = lowStockItems.slice(0, 3);
+            container.innerHTML = shown.map(p => `
+                <div class="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-slate-800 dark:text-white truncate">${escapeHtml(p.name)}</p>
+                        <p class="text-[10px] text-slate-400">Min: ${p.min_stock}</p>
                     </div>
-                    <div class="text-right">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">${p.stock} ${p.unit}</span>
-                        <p class="text-[9px] text-slate-400 mt-0.5">Min: ${p.min_stock}</p>
-                    </div>
-                </div>
-            `).join('');
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white whitespace-nowrap">${p.stock} ${escapeHtml(p.unit)}</span>
+                </div>`).join('') + (lowStockItems.length > shown.length
+                    ? `<button onclick="switchTab('products')" class="w-full text-center text-[11px] text-amber-600 dark:text-amber-400 hover:underline pt-1">+${lowStockItems.length - shown.length} item lainnya</button>`
+                    : '');
         }
 
-        // Render Chart.js
+        // Grafik pergerakan stok (area chart Masuk vs Keluar)
         function renderChart() {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
-            
-            // Aggregate Stock per Category
-            const catMap = {};
-            categories.forEach(c => catMap[c] = 0);
-            products.forEach(p => {
-                catMap[p.category] = (catMap[p.category] || 0) + Number(p.stock);
+            const canvas = document.getElementById('movementChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const days = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            for (let i = dashPeriod - 1; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                days.push(d);
+            }
+            const inMap = {}, outMap = {};
+            days.forEach(d => { inMap[dayKey(d)] = 0; outMap[dayKey(d)] = 0; });
+            transactions.forEach(t => {
+                const k = dayKey(new Date(t.created_at));
+                if (!(k in inMap)) return;
+                if (t.type === 'IN') inMap[k] += Number(t.quantity);
+                else outMap[k] += Number(t.quantity);
             });
 
-            const labels = Object.keys(catMap);
-            const dataValues = Object.values(catMap);
+            const labels = days.map(d => d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+            const fullLabels = days.map(d => d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }));
+            const inData = days.map(d => inMap[dayKey(d)]);
+            const outData = days.map(d => outMap[dayKey(d)]);
 
-            if (categoryChartInstance) {
-                categoryChartInstance.destroy();
-            }
+            if (movementChartInstance) movementChartInstance.destroy();
 
             const isDark = document.documentElement.classList.contains('dark');
+            const fill = rgb => c => {
+                const area = c.chart.chartArea;
+                if (!area) return 'transparent';
+                const g = c.chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                g.addColorStop(0, `rgba(${rgb},.50)`);
+                g.addColorStop(1, `rgba(${rgb},0)`);
+                return g;
+            };
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
 
-            categoryChartInstance = new Chart(ctx, {
-                type: 'bar',
+            movementChartInstance = new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Stok Unit',
-                        data: dataValues,
-                        backgroundColor: '#10b981',
-                        borderRadius: 8,
-                        borderSkipped: false,
-                    }]
+                    labels,
+                    datasets: [
+                        { label: 'Masuk', data: inData, borderColor: '#34d399', backgroundColor: fill('52,211,153'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, pointHoverBackgroundColor: '#fff', pointHoverBorderColor: '#34d399', pointHoverBorderWidth: 2 },
+                        { label: 'Keluar', data: outData, borderColor: '#f87171', backgroundColor: fill('248,113,113'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, pointHoverBackgroundColor: '#fff', pointHoverBorderColor: '#f87171', pointHoverBorderWidth: 2 }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#0b1220' : '#ffffff',
+                            titleColor: isDark ? '#e2e8f0' : '#0f172a',
+                            borderColor: isDark ? 'rgba(255,255,255,.14)' : '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                title: items => fullLabels[items[0].dataIndex],
+                                label: item => item.datasetIndex === 0 ? `+${item.parsed.y} unit masuk` : `-${item.parsed.y} unit keluar`,
+                                labelTextColor: item => item.datasetIndex === 0 ? '#34d399' : '#f87171'
+                            }
+                        }
                     },
                     scales: {
-                        x: {
-                            ticks: { color: isDark ? '#94a3b8' : '#64748b' },
-                            grid: { display: false }
-                        },
-                        y: {
-                            ticks: { color: isDark ? '#94a3b8' : '#64748b' },
-                            grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
-                        }
+                        x: { ticks: { color: tickColor, maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false }, border: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: tickColor, precision: 0 }, grid: { color: isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)' }, border: { display: false } }
                     }
                 }
             });
@@ -942,7 +1128,7 @@ CREATE TABLE stock_transactions (
                                     <tr class="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs">
                                         <th class="p-4 font-semibold">SKU & Nama Produk</th>
                                         <th class="p-4 font-semibold">Kategori</th>
-                                        <th class="p-4 font-semibold">Harga Jual</th>
+                                        <th class="p-4 font-semibold">Min. Stok</th>
                                         <th class="p-4 font-semibold">Status Stok</th>
                                         <th class="p-4 font-semibold text-center">Quick Adjust</th>
                                         <th class="p-4 font-semibold text-right">Aksi</th>
@@ -960,9 +1146,7 @@ CREATE TABLE stock_transactions (
                                                 <td class="p-4">
                                                     <span class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">${p.category}</span>
                                                 </td>
-                                                <td class="p-4 font-semibold text-slate-800 dark:text-slate-100">
-                                                    ${formatIDR(p.sell_price)}
-                                                </td>
+                                                <td class="p-4 text-slate-600 dark:text-slate-300">${p.min_stock} ${p.unit}</td>
                                                 <td class="p-4">
                                                     ${statusBadge}
                                                 </td>
@@ -999,7 +1183,7 @@ CREATE TABLE stock_transactions (
                                     </div>
                                     <h4 class="font-bold text-slate-900 dark:text-white mt-2">${p.name}</h4>
                                     <p class="text-xs text-slate-400">SKU: ${p.sku}</p>
-                                    <p class="text-lg font-extrabold text-emerald-500 mt-3">${formatIDR(p.sell_price)}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Min. stok: ${p.min_stock} ${p.unit}</p>
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
                                     <div class="flex items-center gap-2">
@@ -1055,7 +1239,6 @@ CREATE TABLE stock_transactions (
                 if (sort === 'name-desc') return b.name.localeCompare(a.name);
                 if (sort === 'stock-asc') return Number(a.stock) - Number(b.stock);
                 if (sort === 'stock-desc') return Number(b.stock) - Number(a.stock);
-                if (sort === 'price-desc') return Number(b.sell_price) - Number(a.sell_price);
                 return 0;
             });
         }
@@ -1089,8 +1272,6 @@ CREATE TABLE stock_transactions (
                     document.getElementById('prodSku').value = p.sku;
                     document.getElementById('prodName').value = p.name;
                     document.getElementById('prodCategory').value = p.category;
-                    document.getElementById('prodBuyPrice').value = p.buy_price;
-                    document.getElementById('prodSellPrice').value = p.sell_price;
                     document.getElementById('prodStock').value = p.stock;
                     document.getElementById('prodMinStock').value = p.min_stock;
                     document.getElementById('prodUnit').value = p.unit;
@@ -1114,8 +1295,6 @@ CREATE TABLE stock_transactions (
                 sku: document.getElementById('prodSku').value.trim(),
                 name: document.getElementById('prodName').value.trim(),
                 category: document.getElementById('prodCategory').value,
-                buy_price: Number(document.getElementById('prodBuyPrice').value),
-                sell_price: Number(document.getElementById('prodSellPrice').value),
                 stock: Number(document.getElementById('prodStock').value),
                 min_stock: Number(document.getElementById('prodMinStock').value),
                 unit: document.getElementById('prodUnit').value.trim()
@@ -1260,8 +1439,8 @@ CREATE TABLE stock_transactions (
                 downloadAnchor.click();
                 downloadAnchor.remove();
             } else if (type === 'csv') {
-                const headers = ["SKU", "Nama Produk", "Kategori", "Harga Beli", "Harga Jual", "Stok", "Min Stok", "Satuan"];
-                const rows = products.map(p => [p.sku, `"${p.name}"`, p.category, p.buy_price, p.sell_price, p.stock, p.min_stock, p.unit]);
+                const headers = ["SKU", "Nama Produk", "Kategori", "Stok", "Min Stok", "Satuan"];
+                const rows = products.map(p => [p.sku, `"${p.name}"`, p.category, p.stock, p.min_stock, p.unit]);
                 let csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
                 
                 const encodedUri = encodeURI(csvContent);
@@ -1368,8 +1547,7 @@ CREATE TABLE stock_transactions (
                 if (existingSkus.has(p.sku)) return;
                 const newId = uuid();
                 idMap[p.id] = newId;
-                const { id, ...rest } = p;
-                newRows.push({ ...rest, id: newId });
+                newRows.push({ id: newId, sku: p.sku, name: p.name, category: p.category, stock: p.stock, min_stock: p.min_stock, unit: p.unit });
             });
 
             if (newRows.length && !await dbRun(supabaseClient.from('products').insert(newRows), 'Kirim produk')) return;
