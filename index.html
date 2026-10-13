@@ -136,6 +136,10 @@
                     <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
                 </button>
                 
+                <button onclick="refreshData()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform" title="Muat ulang data">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+
                 <button onclick="openSettingsModal()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform" title="Pengaturan Database">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                 </button>
@@ -508,6 +512,16 @@
                     </button>
                 </div>
 
+                <div class="flex gap-2">
+                    <button onclick="testSupabaseConnection()" class="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl font-semibold text-xs">
+                        Tes Koneksi
+                    </button>
+                    <button onclick="pushLocalToSupabase()" class="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl font-semibold text-xs">
+                        Kirim Data Lokal ke Supabase
+                    </button>
+                </div>
+                <pre id="sbTestResult" class="hidden whitespace-pre-wrap text-[11px] p-3 rounded-xl bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300"></pre>
+
                 <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
                     <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Petunjuk Script SQL DDL Supabase:</h4>
                     <p class="text-[11px] text-slate-400 mb-2">Salin dan jalankan query berikut pada SQL Editor di Dashboard Supabase Anda:</p>
@@ -570,6 +584,75 @@ CREATE TABLE stock_transactions (
         let viewMode = 'table'; // 'table' | 'grid'
         let categoryChartInstance = null;
 
+        // ---------- Helpers Supabase ----------
+        function uuid() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        function explainDbError(error) {
+            const msg = (error && error.message) || String(error);
+            const code = error && error.code;
+            if (code === '42501' || /row-level security/i.test(msg)) return 'Ditolak RLS. Matikan RLS atau tambah policy untuk role anon di Supabase.';
+            if (code === '42P01' || code === 'PGRST205' || /does not exist|schema cache/i.test(msg)) return 'Tabel belum ada. Jalankan script SQL di SQL Editor Supabase.';
+            if (code === '22P02') return 'Format ID tidak valid (kolom id harus UUID).';
+            if (code === '23505') return 'Data duplikat (SKU atau nama sudah dipakai).';
+            if (code === '23503') return 'Data terkait tidak ditemukan (produk sudah dihapus?).';
+            if (code === '23514') return 'Nilai tidak sesuai aturan tabel.';
+            if (/Failed to fetch|NetworkError/i.test(msg)) return 'Tidak bisa terhubung. Cek URL Supabase dan koneksi internet.';
+            if (/Invalid API key|JWT/i.test(msg)) return 'API key tidak valid. Pakai anon public key.';
+            return msg;
+        }
+
+        // Jalankan query Supabase, tampilkan error jika gagal. Return true jika sukses.
+        async function dbRun(query, label) {
+            try {
+                const { error } = await query;
+                if (error) {
+                    console.error(label, error);
+                    showToast(`${label} gagal: ${explainDbError(error)}`, 'error');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error(label, e);
+                showToast(`${label} gagal: ${explainDbError(e)}`, 'error');
+                return false;
+            }
+        }
+
+        // Ubah stok + catat mutasi (dipakai tombol +/- dan form mutasi)
+        async function applyStockChange(prod, type, qty, notes) {
+            const newStock = type === 'IN' ? Number(prod.stock) + qty : Number(prod.stock) - qty;
+            if (newStock < 0) { showToast('Stok tidak mencukupi!', 'error'); return false; }
+
+            const newTx = {
+                id: uuid(),
+                product_id: prod.id,
+                type: type,
+                quantity: qty,
+                notes: notes,
+                created_at: new Date().toISOString()
+            };
+
+            if (isSupabaseConnected) {
+                if (!await dbRun(supabaseClient.from('products').update({ stock: newStock }).eq('id', prod.id), 'Update stok')) return false;
+                if (!await dbRun(supabaseClient.from('stock_transactions').insert([newTx]), 'Catat mutasi')) {
+                    // kembalikan stok agar tidak selisih
+                    await supabaseClient.from('products').update({ stock: prod.stock }).eq('id', prod.id);
+                    return false;
+                }
+            }
+
+            prod.stock = newStock;
+            transactions.unshift(newTx);
+            saveData();
+            return true;
+        }
+
         // Initialize App
         window.onload = async function() {
             lucide.createIcons();
@@ -620,36 +703,55 @@ CREATE TABLE stock_transactions (
             }
         }
 
-        function updateStatusBadge(connected, text) {
+        function updateStatusBadge(connected, text, isError = false) {
             const dot = document.getElementById('statusDot');
             const txt = document.getElementById('statusText');
-            if (connected) {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
-                txt.textContent = text;
-            } else {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
-                txt.textContent = text;
-            }
+            const color = connected ? 'bg-emerald-500' : (isError ? 'bg-rose-500' : 'bg-amber-500');
+            dot.className = `w-2.5 h-2.5 rounded-full ${color} animate-pulse`;
+            txt.textContent = text;
         }
 
         // Data Loading Strategy
         async function loadData() {
             if (isSupabaseConnected) {
                 try {
-                    const { data: catData } = await supabaseClient.from('categories').select('*');
-                    const { data: prodData } = await supabaseClient.from('products').select('*');
-                    const { data: txData } = await supabaseClient.from('stock_transactions').select('*');
+                    const [cat, prod, tx] = await Promise.all([
+                        supabaseClient.from('categories').select('*'),
+                        supabaseClient.from('products').select('*'),
+                        supabaseClient.from('stock_transactions').select('*').order('created_at', { ascending: false })
+                    ]);
 
-                    categories = catData && catData.length ? catData.map(c => c.name) : INITIAL_CATEGORIES;
-                    products = prodData || [];
-                    transactions = txData || [];
+                    const err = cat.error || prod.error || tx.error;
+                    if (err) throw err;
+
+                    // Seed kategori bawaan jika tabel masih kosong
+                    if (!cat.data.length) {
+                        await dbRun(supabaseClient.from('categories').insert(INITIAL_CATEGORIES.map(name => ({ name }))), 'Isi kategori awal');
+                        categories = [...INITIAL_CATEGORIES];
+                    } else {
+                        categories = cat.data.map(c => c.name);
+                    }
+                    products = prod.data || [];
+                    transactions = tx.data || [];
+                    updateStatusBadge(true, "Connected to Supabase");
                 } catch (err) {
-                    showToast('Gagal memuat data dari Supabase, beralih ke LocalStorage', 'warning');
+                    console.error('Load Supabase error:', err);
+                    showToast('Gagal memuat dari Supabase: ' + explainDbError(err), 'error');
+                    // Keluar dari mode Supabase supaya data tidak tersimpan ke tempat yang salah
+                    isSupabaseConnected = false;
+                    updateStatusBadge(false, "Supabase error - mode lokal", true);
                     loadLocalStorageData();
                 }
             } else {
                 loadLocalStorageData();
             }
+        }
+
+        async function refreshData() {
+            initSupabase();
+            await loadData();
+            renderAll();
+            showToast('Data dimuat ulang', 'info');
         }
 
         function loadLocalStorageData() {
@@ -967,29 +1069,8 @@ CREATE TABLE stock_transactions (
             const prod = products.find(p => p.id === productId);
             if (!prod) return;
 
-            const newStock = Number(prod.stock) + delta;
-            if (newStock < 0) return showToast('Stok tidak bisa negatif!', 'error');
-
-            prod.stock = newStock;
-
-            // Log Transaction
-            const newTx = {
-                id: 'tx-' + Date.now(),
-                product_id: productId,
-                type: delta > 0 ? 'IN' : 'OUT',
-                quantity: Math.abs(delta),
-                notes: 'Penyesuaian cepat tombol (+/-)',
-                created_at: new Date().toISOString()
-            };
-
-            transactions.unshift(newTx);
-
-            if (isSupabaseConnected) {
-                await supabaseClient.from('products').update({ stock: newStock }).eq('id', productId);
-                await supabaseClient.from('stock_transactions').insert([newTx]);
-            } else {
-                saveData();
-            }
+            const ok = await applyStockChange(prod, delta > 0 ? 'IN' : 'OUT', Math.abs(delta), 'Penyesuaian cepat tombol (+/-)');
+            if (!ok) return;
 
             renderAll();
             showToast(`Stok ${prod.name} diperbarui`, 'success');
@@ -1044,21 +1125,18 @@ CREATE TABLE stock_transactions (
                 // Edit Mode
                 const index = products.findIndex(p => p.id === id);
                 if (index !== -1) {
+                    if (isSupabaseConnected && !await dbRun(supabaseClient.from('products').update(prodData).eq('id', id), 'Update produk')) return;
                     products[index] = { ...products[index], ...prodData };
-                    if (isSupabaseConnected) {
-                        await supabaseClient.from('products').update(prodData).eq('id', id);
-                    }
                     showToast('Produk berhasil diperbarui', 'success');
                 }
             } else {
-                // New Product
-                const newId = 'prod-' + Date.now();
-                const newProd = { id: newId, ...prodData };
-                products.push(newProd);
-
-                if (isSupabaseConnected) {
-                    await supabaseClient.from('products').insert([newProd]);
+                // New Product (ID UUID agar cocok dengan kolom Supabase)
+                if (products.some(p => p.sku.toLowerCase() === prodData.sku.toLowerCase())) {
+                    return showToast('SKU sudah dipakai produk lain', 'error');
                 }
+                const newProd = { id: uuid(), ...prodData };
+                if (isSupabaseConnected && !await dbRun(supabaseClient.from('products').insert([newProd]), 'Simpan produk')) return;
+                products.push(newProd);
                 showToast('Produk baru ditambahkan', 'success');
             }
 
@@ -1073,15 +1151,11 @@ CREATE TABLE stock_transactions (
 
         async function deleteProduct(id) {
             if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+                if (isSupabaseConnected && !await dbRun(supabaseClient.from('products').delete().eq('id', id), 'Hapus produk')) return;
+
                 products = products.filter(p => p.id !== id);
                 transactions = transactions.filter(t => t.product_id !== id);
-
-                if (isSupabaseConnected) {
-                    await supabaseClient.from('products').delete().eq('id', id);
-                } else {
-                    saveData();
-                }
-
+                saveData();
                 renderAll();
                 showToast('Produk berhasil dihapus', 'success');
             }
@@ -1103,12 +1177,9 @@ CREATE TABLE stock_transactions (
             const val = input.value.trim();
 
             if (val && !categories.includes(val)) {
+                if (isSupabaseConnected && !await dbRun(supabaseClient.from('categories').insert([{ name: val }]), 'Simpan kategori')) return;
                 categories.push(val);
-                if (isSupabaseConnected) {
-                    await supabaseClient.from('categories').insert([{ name: val }]);
-                } else {
-                    saveData();
-                }
+                saveData();
                 input.value = '';
                 renderCategoriesOptions();
                 renderAll();
@@ -1118,12 +1189,9 @@ CREATE TABLE stock_transactions (
 
         async function removeCategory(name) {
             if (confirm(`Hapus kategori "${name}"?`)) {
+                if (isSupabaseConnected && !await dbRun(supabaseClient.from('categories').delete().eq('name', name), 'Hapus kategori')) return;
                 categories = categories.filter(c => c !== name);
-                if (isSupabaseConnected) {
-                    await supabaseClient.from('categories').delete().eq('name', name);
-                } else {
-                    saveData();
-                }
+                saveData();
                 renderCategoriesOptions();
                 renderAll();
                 showToast('Kategori dihapus', 'success');
@@ -1173,31 +1241,8 @@ CREATE TABLE stock_transactions (
             const prod = products.find(p => p.id === productId);
             if (!prod) return;
 
-            if (type === 'OUT' && prod.stock < quantity) {
-                return showToast('Stok tidak mencukupi untuk barang keluar!', 'error');
-            }
-
-            // Update product stock
-            if (type === 'IN') prod.stock += quantity;
-            else prod.stock -= quantity;
-
-            const newTx = {
-                id: 'tx-' + Date.now(),
-                product_id: productId,
-                type: type,
-                quantity: quantity,
-                notes: notes,
-                created_at: new Date().toISOString()
-            };
-
-            transactions.unshift(newTx);
-
-            if (isSupabaseConnected) {
-                await supabaseClient.from('products').update({ stock: prod.stock }).eq('id', productId);
-                await supabaseClient.from('stock_transactions').insert([newTx]);
-            } else {
-                saveData();
-            }
+            const ok = await applyStockChange(prod, type, quantity, notes);
+            if (!ok) return;
 
             document.getElementById('transactionForm').reset();
             renderAll();
@@ -1241,7 +1286,7 @@ CREATE TABLE stock_transactions (
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        function saveSupabaseConfig() {
+        async function saveSupabaseConfig() {
             const url = document.getElementById('sbUrl').value.trim();
             const key = document.getElementById('sbKey').value.trim();
 
@@ -1249,12 +1294,99 @@ CREATE TABLE stock_transactions (
                 localStorage.setItem('sb_url', url);
                 localStorage.setItem('sb_key', key);
                 initSupabase();
-                loadData().then(() => renderAll());
-                closeSettingsModal();
-                showToast('Konfigurasi Supabase berhasil disimpan!', 'success');
+                await loadData();
+                renderAll();
+                if (isSupabaseConnected) {
+                    closeSettingsModal();
+                    showToast('Terhubung ke Supabase', 'success');
+                }
             } else {
                 showToast('URL & Key Supabase tidak boleh kosong', 'error');
             }
+        }
+
+        // Tes koneksi: cek tiap tabel (baca) dan izin tulis (RLS)
+        async function testSupabaseConnection() {
+            const url = document.getElementById('sbUrl').value.trim();
+            const key = document.getElementById('sbKey').value.trim();
+            const out = document.getElementById('sbTestResult');
+            if (!url || !key) return showToast('Isi URL dan Key dulu', 'error');
+
+            out.classList.remove('hidden');
+            out.textContent = 'Menguji koneksi...';
+            let client;
+            try { client = window.supabase.createClient(url, key); }
+            catch (e) { out.textContent = 'URL/Key tidak valid: ' + e.message; return; }
+
+            const lines = [];
+            for (const table of ['categories', 'products', 'stock_transactions']) {
+                try {
+                    const { error } = await client.from(table).select('id', { head: true, count: 'exact' });
+                    lines.push(error ? `✗ ${table}: ${explainDbError(error)}` : `✓ ${table}: bisa dibaca`);
+                } catch (e) {
+                    lines.push(`✗ ${table}: ${explainDbError(e)}`);
+                }
+            }
+
+            // Tes tulis: tambah lalu hapus satu kategori sementara
+            const probe = '__tes_' + Date.now();
+            try {
+                const ins = await client.from('categories').insert([{ name: probe }]);
+                if (ins.error) lines.push('✗ tulis: ' + explainDbError(ins.error));
+                else {
+                    await client.from('categories').delete().eq('name', probe);
+                    lines.push('✓ tulis: berhasil (RLS/policy OK)');
+                }
+            } catch (e) {
+                lines.push('✗ tulis: ' + explainDbError(e));
+            }
+            out.textContent = lines.join('\n');
+        }
+
+        // Kirim data yang tersimpan di LocalStorage ke Supabase
+        async function pushLocalToSupabase() {
+            if (!isSupabaseConnected) return showToast('Hubungkan ke Supabase dulu', 'error');
+            const localProducts = JSON.parse(localStorage.getItem('inv_products') || 'null');
+            if (!localProducts || !localProducts.length) return showToast('Tidak ada data lokal untuk dikirim', 'info');
+            if (!confirm(`Kirim ${localProducts.length} produk lokal ke Supabase? Produk dengan SKU yang sudah ada akan dilewati.`)) return;
+
+            const localCats = JSON.parse(localStorage.getItem('inv_categories') || '[]');
+            const localTx = JSON.parse(localStorage.getItem('inv_transactions') || '[]');
+
+            // Kategori
+            const allCats = [...new Set([...localCats, ...localProducts.map(p => p.category)])].filter(Boolean);
+            if (!await dbRun(supabaseClient.from('categories').upsert(allCats.map(name => ({ name })), { onConflict: 'name', ignoreDuplicates: true }), 'Kirim kategori')) return;
+
+            // Produk: lewati SKU yang sudah ada di Supabase
+            const existing = await supabaseClient.from('products').select('sku');
+            if (existing.error) return showToast('Gagal cek produk: ' + explainDbError(existing.error), 'error');
+            const existingSkus = new Set(existing.data.map(p => p.sku));
+
+            const idMap = {};
+            const newRows = [];
+            localProducts.forEach(p => {
+                if (existingSkus.has(p.sku)) return;
+                const newId = uuid();
+                idMap[p.id] = newId;
+                const { id, ...rest } = p;
+                newRows.push({ ...rest, id: newId });
+            });
+
+            if (newRows.length && !await dbRun(supabaseClient.from('products').insert(newRows), 'Kirim produk')) return;
+
+            const txRows = localTx.filter(t => idMap[t.product_id]).map(t => ({
+                id: uuid(),
+                product_id: idMap[t.product_id],
+                type: t.type,
+                quantity: t.quantity,
+                notes: t.notes || '',
+                created_at: t.created_at
+            }));
+            if (txRows.length && !await dbRun(supabaseClient.from('stock_transactions').insert(txRows), 'Kirim mutasi')) return;
+
+            await loadData();
+            renderAll();
+            showToast(`${newRows.length} produk dan ${txRows.length} mutasi terkirim`, 'success');
         }
 
         function clearSupabaseConfig() {
@@ -1281,7 +1413,7 @@ CREATE TABLE stock_transactions (
                 info: 'bg-indigo-600 text-white'
             };
 
-            toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type]}`;
+            toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto max-w-sm ${bgColors[type]}`;
             toast.innerHTML = `<span>${message}</span>`;
 
             container.appendChild(toast);
@@ -1293,7 +1425,7 @@ CREATE TABLE stock_transactions (
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, type === 'error' ? 7000 : 3000);
         }
 
         // Mobile Menu Toggle Event
