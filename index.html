@@ -170,7 +170,6 @@
 
                 <div class="nav-item cursor-default hover:!bg-transparent"><i data-lucide="package" class="w-[18px] h-[18px]"></i> Inventaris <i data-lucide="chevron-down" class="w-4 h-4 ml-auto opacity-60"></i></div>
                 <button onclick="switchTab('products')" id="nav-products" class="nav-item nav-sub"><i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> Produk &amp; Stok</button>
-                <button onclick="openCategoryModal()" id="nav-categories" class="nav-item nav-sub"><i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> Kategori</button>
                 <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-item nav-sub"><i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> Mutasi Stok</button>
 
                 <button onclick="openSettingsModal()" id="nav-settings" class="nav-item"><i data-lucide="settings" class="w-[18px] h-[18px]"></i> Pengaturan</button>
@@ -190,19 +189,14 @@
 
     <main class="flex-1 flex flex-col min-w-0 min-h-screen">
 
-        <header class="app-header sticky top-0 z-20 h-16 px-4 sm:px-6 flex items-center gap-3">
-            <div class="relative flex-1 max-w-xl">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input id="globalSearch" type="text" oninput="onGlobalSearch(this.value)" placeholder="Cari produk, SKU, atau keterangan..." class="field pl-9 pr-14">
-                <kbd class="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 dark:border-white/15 rounded px-1.5 py-0.5">Ctrl+K</kbd>
-            </div>
-            <div class="flex items-center gap-2 ml-auto">
-                <button onclick="openAlertProducts()" class="icon-btn relative !w-10 !h-10 !rounded-xl" title="Stok perlu perhatian">
+        <header class="app-header sticky top-0 z-20 h-14 px-4 sm:px-6 flex items-center justify-end gap-3">
+            <div class="flex items-center gap-2">
+                <button onclick="openAlertProducts()" class="icon-btn relative !w-9 !h-9 !rounded-xl" title="Stok perlu perhatian">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     <span id="bellCount" class="hidden absolute -top-1.5 -right-1.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
                 </button>
-                <button onclick="refreshData()" class="icon-btn !w-10 !h-10 !rounded-xl" title="Muat ulang data"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
-                <button onclick="toggleTheme()" class="icon-btn !w-10 !h-10 !rounded-xl" title="Ganti tema">
+                <button onclick="refreshData()" class="icon-btn !w-9 !h-9 !rounded-xl" title="Muat ulang data"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                <button onclick="toggleTheme()" class="icon-btn !w-9 !h-9 !rounded-xl" title="Ganti tema">
                     <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
                     <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
                 </button>
@@ -328,11 +322,9 @@
                             <p class="text-sm text-slate-500 dark:text-slate-400">Kelola data produk, kategori, dan pantau stok secara real-time</p>
                         </div>
                     </div>
-                    <div class="date-chip hidden sm:flex">
-                        <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
-                        <div><p class="js-date font-semibold text-slate-700 dark:text-slate-100"></p><p class="js-time text-slate-400"></p></div>
-                    </div>
+                    
                     <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="openCategoryModal()" class="btn-ghost"><i data-lucide="folder-cog" class="w-4 h-4"></i> Kategori</button>
                         <button onclick="document.getElementById('importFile').click()" class="btn-ghost"><i data-lucide="upload" class="w-4 h-4"></i> Import</button>
                         <button onclick="exportData('csv')" class="btn-ghost"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
                         <button onclick="openProductModal()" class="btn-accent"><i data-lucide="plus" class="w-4 h-4"></i> Tambah Produk</button>
@@ -393,7 +385,6 @@
                                 <button id="btnViewTable" onclick="setProductView('table')" class="seg-btn active"><i data-lucide="table" class="w-4 h-4"></i> Tabel</button>
                                 <button id="btnViewGrid" onclick="setProductView('grid')" class="seg-btn"><i data-lucide="layout-grid" class="w-4 h-4"></i> Kartu</button>
                             </div>
-                            <button onclick="openCategoryModal()" class="icon-btn !w-10 !h-10 !rounded-xl" title="Kelola kategori"><i data-lucide="folder-cog" class="w-4 h-4"></i></button>
                         </div>
 
                         <div id="bulkBar" class="hidden mt-3 px-3 py-2 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-between gap-2 text-xs">
@@ -1030,13 +1021,6 @@ CREATE TABLE stock_transactions (
             updateTxTypeUi();
         };
 
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                document.getElementById('globalSearch').focus();
-            }
-        });
-
         function updateClock() {
             const n = new Date();
             document.querySelectorAll('.js-date').forEach(e => e.textContent = n.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
@@ -1078,24 +1062,10 @@ CREATE TABLE stock_transactions (
             window.scrollTo({ top: 0 });
         }
 
-        function onGlobalSearch(v) {
-            if (currentTab === 'transactions') {
-                document.getElementById('txSearch').value = v;
-                txPage = 1;
-                renderTransactions();
-            } else {
-                if (currentTab !== 'products' && v.trim()) switchTab('products');
-                document.getElementById('searchInput').value = v;
-                prodPage = 1;
-                renderProducts();
-            }
-        }
-
         function openAlertProducts() {
             switchTab('products');
             document.getElementById('filterStatus').value = 'alert';
             document.getElementById('searchInput').value = '';
-            document.getElementById('globalSearch').value = '';
             prodPage = 1;
             renderProducts();
         }
@@ -1716,7 +1686,7 @@ CREATE TABLE stock_transactions (
         function onTxFilterChange() { txPage = 1; renderTransactions(); }
         function goTxPage(n) { txPage = n; renderTransactions(); }
         function resetTxFilters() {
-            ['txFrom', 'txTo', 'txTypeFilter', 'txProductFilter', 'txSearch', 'globalSearch'].forEach(id => document.getElementById(id).value = '');
+            ['txFrom', 'txTo', 'txTypeFilter', 'txProductFilter', 'txSearch'].forEach(id => document.getElementById(id).value = '');
             txPage = 1;
             renderTransactions();
         }
